@@ -1,0 +1,252 @@
+{% extends "admin/base_site.html" %}
+{% load minisentry_extra %}
+{% block extrastyle %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
+<style>
+    .sentry {
+        font-family: Rubik, "Avenir Next", "Helvetica Neue", sans-serif;
+    }
+    #raw {
+        white-space: pre-wrap;
+    }
+    #title {
+        font-size: 20px;
+        font-weight: bold;
+    }
+    #subtitle {
+        color: rgb(98, 84, 113);
+    }
+    .small {
+        font-size: 12px;
+    }
+    .mono {
+        font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+    }
+    .tag {
+        display: inline-block;
+        line-height: 2;
+        font-size: 12px;
+        margin: 3px;
+        vertical-align: top;
+    }
+    .tag_name {
+        border: 1px solid rgb(224, 220, 229);
+        border-radius: 6px 0px 0px 6px;
+        padding: 4px 8px;
+        max-width: 100%;
+        margin: 0;
+    }
+    .tag_value {
+        border: 1px solid rgb(224, 220, 229);
+        border-left: 0;
+        {#background: rgb(250, 249, 251);#}
+        padding: 4px 8px;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0px 6px 6px 0px;
+    }
+    .frame {
+        background: rgb(255, 255, 255);
+        border-radius: 6px;
+        border: 1px solid rgb(224, 220, 229);
+    }
+    .file_header {
+        color: rgb(152,147,157);
+        background: rgb(250, 249, 251);
+        padding: 10px;
+        font-size: 14px;
+    }
+    .file_header .filename {
+        color: rgb(62, 52, 70);
+    }
+    .file_header .function {
+        color: rgb(62, 52, 70);
+    }
+    .file_header .lineno {
+        color: rgb(62, 52, 70);
+    }
+    .in_app {
+        align-items: center;
+        height: 20px;
+        border-radius: 20px;
+        background-color: rgba(108, 95, 199, 0.08);
+        border: 1px solid rgba(108, 95, 199, 0.5);
+        padding: 0px 8px;
+    }
+    .context .line, .context .lineno {
+        font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+        font-size: 12px;
+        line-height: 12px ;
+        padding: 2px;
+        white-space: pre;
+    }
+    .context .lineno::after {
+        content: ': ';
+    }
+    .context_line {
+        {#background-color: rgb(43, 34, 51) ;#}
+        background-color: var(--body-fg) !important;
+        color: var(--body-bg) !important;
+    }
+    .var {
+        font-size: 12px;
+        border-bottom: 1px solid #e2dee6!important;
+    }
+    .var_name {
+        padding: 5px;
+    }
+    .var_value {
+        {#background-color: #faf9fb;#}
+        white-space: pre-wrap;
+        font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+        padding: 5px;
+    }
+    table {
+        border: 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    .context_table {
+        border-bottom: 1px solid #e2dee6!important;
+    }
+    #breadcrumbs {
+        background: rgb(255, 255, 255);
+        border-radius: 6px;
+        border: 1px solid rgb(224, 220, 229);
+    }
+    #breadcrumbs td {
+        padding: 5px;
+    }
+    #breadcrumbs .message {
+        {#background-color: #faf9fb;#}
+        white-space: pre-wrap;
+        font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+        padding: 5px;
+    }
+    #breadcrumbs tr {
+        border-bottom: 1px solid #e2dee6!important;
+    }
+    #breadcrumbs th {
+        text-transform: uppercase;
+        color: rgb(127,112,143);
+        background-color: rgb(250,249,251);
+        padding: 5px;
+        font-size: 12px;
+    }
+    .category {
+        padding: 5px;
+    }
+    .level {
+        padding: 5px;
+    }
+    .timestamp {
+        padding: 5px;
+    }
+
+</style>
+{% endblock %}
+{% block content %}
+    <span class="sentry">
+<div id="title">
+    {{ event.exception.values.0.type }}
+    <span id="subtitle">{{ event.transaction }}</span>
+</div>
+
+<div id="subtitle2">{{ event.exception.values.0.value }}</div>
+<br>
+<span class="small" id="events_count">EVENTS: {{ events_count }}</span>
+<div class="small" id="event_id">event_id:{{ event.event_id }}</div>
+<div class="small" id="hash">hash:{{ hash }}</div>
+<div class="small" id="when">{{ event.timestamp|iso_to_date|date:'Y-m-d H:i:s' }}</div>
+<h3>Tags</h3>
+<div id="tags">
+{% for tag_name, tag_value in tags.items %}
+    {% if tag_value %}
+
+    <span class="tag">
+    <span class="tag_name">{{ tag_name }}</span><span class="tag_value">{{ tag_value }}</span>
+    </span>
+    {% endif %}
+{% endfor %}
+</div>
+<h3>Stacktrace</h3>
+<div id="stacktrace">
+    {% for exception in event.exception.values reversed %}
+        <div class="exception">
+            <div class="type">{{ exception.type }}</div>
+            <div class="value small">{{ exception.value }}</div>
+        <br>
+        {% for frame in exception.stacktrace.frames reversed %}
+            <div class="frame">
+            <div class="file_header">
+                <span class="filename">{{ frame.filename }}</span>
+                in <span class="function">{{ frame.function }}</span>
+                at line <span class="lineno">{{ frame.lineno }}</span>
+                {% if frame.in_app %}
+                    <span class="in_app">In App</span>
+                {% endif %}
+            </div>
+            <table class="context_table">
+            {% for lineno, line in frame.pre_context %}
+                <tr class="pre_context context">
+                    <td class="lineno">{{ lineno }}</td>
+                    <td class="line">{{ line }}</td>
+                </tr>
+            {% endfor %}
+            <tr class="context_line context">
+                <td class="lineno">{{ frame.lineno }}</td>
+                <td class="line">{{ frame.context_line }}</td>
+            </tr>
+            {% for lineno, line in frame.post_context %}
+                <tr class="post_context context">
+                    <td class="lineno">{{ lineno }}</td>
+                    <td class="line">{{ line }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+            <table class="vars">
+            {% for var_name, var_value in frame.vars|stringify2 %}
+               <tr class="var">
+                <td class="var_name">{{ var_name }}</td>
+                <td class="var_value">{{ var_value }}</td>
+               </tr>
+            {% endfor %}
+            </table>
+        </div> {# frame #}
+        {% endfor %}
+
+    </div>  {# exception #}
+    {% endfor %}
+
+</div> {# stacktrace #}
+<h3>Breadcrumbs</h3>
+<table id="breadcrumbs">
+    <tr>
+        <th>type</th>
+        <th>category</th>
+        <th>description</th>
+        <th>level</th>
+        <th>time</th>
+    </tr>
+        <tr>
+        <td class="type">error</td>
+        <td class="category">exception</td>
+        <td class="message">{{ event.exception.values.0.type }}: {{ event.exception.values.0.value }}</td>
+        <td class="level">{{ event.level }}</td>
+        <td class="timestamp">{{ event.timestamp|iso_to_date|date:'H:i:s' }}</td>
+        </tr>
+    {% for breadcrumb in event.breadcrumbs.values reversed %}
+        <tr>
+        <td class="type">{{ breadcrumb.type }}</td>
+        <td class="category">{{ breadcrumb.category }}</td>
+        <td class="message">{{ breadcrumb.message }}{% if breadcrumb.data %} <br>data: {{ breadcrumb.data }}{% endif %}</td>
+        <td class="level">{{ breadcrumb.level }}</td>
+        <td class="timestamp">{{ breadcrumb.timestamp|iso_to_date|date:'H:i:s' }}</td>
+        </tr>
+    {% endfor %}
+
+</table>
+</span>
+{#<h3>Raw event</h3>#}
+{#<div id="raw">{{ raw }}</div>#}
+{% endblock %}
