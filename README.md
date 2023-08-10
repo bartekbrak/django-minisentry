@@ -62,8 +62,8 @@ from django.urls import path, include
 
 urlpatterns = [
     ...
+    path("admin/_minisentry/", include('minisentry.urls')),
     path("admin/", admin.site.urls),
-    path("admin/minisentry", include('minisentry.urls')),
 ]
 ```
 
