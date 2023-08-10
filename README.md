@@ -29,24 +29,43 @@ I start with implementing only what I need, with time I will add more stuff.
 
 # install
 
-    pip install django-minisentry
+Install `django-minisentry` from PyPI:
 
-    # settings.py
-    INSTALLED_APPS = [
-        ...,
-        'minisentry'
-    ]
-    
-    # wherever you setup sentry_sdk
-    from minisentry import store
-    sentry_sdk.init(
-        ...,
-        before_send = store(
-            send=False,            # default 
-            event_callback=print,  # maybe for debug
-            hint_callback=print,   # maybe for debug
-        )
+```bash
+pip install django-minisentry
+```
+
+# configure
+
+```python
+# settings.py
+INSTALLED_APPS = [
+    ...,
+    'minisentry'
+]
+
+# wherever you setup sentry_sdk
+from minisentry import store
+sentry_sdk.init(
+    ...,
+    before_send = store(
+        send=False,            # default 
+        event_callback=print,  # maybe for debug
+        hint_callback=print,   # maybe for debug
     )
+)
+
+# urls.py
+from django.urls import path, include
+
+...
+
+urlpatterns = [
+    ...
+    path("admin/", admin.site.urls),
+    path("admin/minisentry", include('minisentry.urls')),
+]
+```
 
 # develop
 
