@@ -53,7 +53,7 @@ class SentryEvent(models.Model):
     def tags(self):
         return {
             'environment': self.event['environment'],
-            'release': self.event['release'],
+            'release': self.event['release'] if 'release' in self.event else 'unset',
             'level': self.event['level'],
             'mechanism': self.event['exception']['values'][0]['mechanism']['type'],
             'server_name': self.event['server_name'],
