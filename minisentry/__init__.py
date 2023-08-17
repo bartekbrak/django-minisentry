@@ -36,7 +36,7 @@ def hashing_function(event: dict) -> str:
     return hashlib.shake_128(to_hash).hexdigest(16)
 
 
-def store(send=False, event_callback: Callable = None, hint_callback: Callable = None):
+def store(send=False, event_callback: Callable = None, hint_callback: Callable = None, ignore_errors=()):
     """
     # wherever you setup sentry_sdk
     from minisentry import store
@@ -50,6 +50,11 @@ def store(send=False, event_callback: Callable = None, hint_callback: Callable =
     )
     """
     def inner(event, hint):
+        if ignore_errors and 'exc_info' in hint:
+            exc_value = hint['exc_info'][1]
+            if isinstance(exc_value, ignore_errors):
+                logger.debug('event %r ignored because ignore_errors=%r', exc_value, ignore_errors)
+                return None
         from minisentry.models import SentryEvent
         from minisentry.models import SentryIssue
         logger.info('calling before_send')
