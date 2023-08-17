@@ -78,7 +78,7 @@ didn't build it so that we can store your events elsewhere. Thanks.
 - permissions?
 - colours
 - stringify2 needs to escape html
-- managment commands to delete old
+- management commands to delete old
 - storage information, sizes
 - clean css
 - prettify sql
@@ -93,12 +93,14 @@ didn't build it so that we can store your events elsewhere. Thanks.
     pip install -e .
     pip install -U setuptools wheel build twine
     rm dist/*
+    # change "version = ????????" in setup.cfg 
     python -m build --wheel
     twine check dist/*
     twine upload dist/*
 
 # changelog
 
+- 2023-08-17 display tags set via `sentry_sdk.set_tag("sth", "sth")`
 - 2023-08-11 ignore_errors, expand README
 - 2023-08-10 rename to minisentry
 - 2023-08-04 first rushed alpha version

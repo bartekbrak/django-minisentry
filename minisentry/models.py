@@ -51,7 +51,7 @@ class SentryEvent(models.Model):
 
     @cached_property
     def tags(self):
-        return {
+        base = {
             'environment': self.event['environment'],
             'release': self.event['release'],
             'level': self.event['level'],
@@ -61,6 +61,10 @@ class SentryEvent(models.Model):
             'transaction': self.event.get('transaction', ''),
             'url': self.event['request']['url'] if 'request' in self.event else '',
         }
+        # user provided via `scope.set_tag`
+        if 'tags' in self.event:
+            base.update(self.event.tags)
+        return base
 
     @classmethod
     def example(cls):
