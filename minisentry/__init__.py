@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import traceback
 from typing import Callable
 
 
@@ -20,18 +21,23 @@ def hashing_function(event: dict) -> str:
     # https://stackoverflow.com/a/74052716
     """
     # for every frame in every stacktrace in exception section, take module, function, context_line
-    parts = [
-        # exception in html will have no module and no function
-        frame.get('module', '')
-        + frame.get('function', '') + frame['context_line']
-        for value in event['exception']['values']
-        for frame in value['stacktrace']['frames']
-    ]
-    if parts:
+    if 'exception' in event:
+        parts = [
+            # exception in html will have no module and no function
+            frame.get('module', '')
+            + frame.get('function', '') + frame['context_line']
+            for value in event['exception']['values']
+            for frame in value['stacktrace']['frames']
+        ]
         to_hash = '\n'.join(parts).encode()
-    else:
+    elif 'transaction' in event:
         # guessing, I have not seen exceptions without traceback yet, but I guess they do happen
         to_hash = event['transaction'].encode()
+    elif 'logentry' in event:
+        # on logger.error('I think this file is broken')
+        to_hash = event['logentry']['message'].encode()
+    else:
+        to_hash = event['event_id'].encode()
     logger.debug('to_hash:\n%s', to_hash)
     return hashlib.shake_128(to_hash).hexdigest(16)
 
@@ -74,7 +80,7 @@ def store(send=False, event_callback: Callable = None, hint_callback: Callable =
             )
             logger.info('created SentryEvent: %s', sevent)
         except Exception as e:
-            logger.debug('unhandles exception in minisentry itself, will not reach sentry: %r', e)
+            logger.debug('unhandled exception in minisentry itself, will not reach sentry: %r', e)
         if event_callback:
             event_callback(event)
         if hint_callback:

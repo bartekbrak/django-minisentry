@@ -43,13 +43,13 @@ I start with implementing only what I need, with time I will add more stuff.
         path('minisentry/', include('minisentry.urls')),
         ...
     ]
-    
+
     # wherever you setup sentry_sdk
     from minisentry import store
     sentry_sdk.init(
         ...,
         before_send = store(
-            send=False,            # default 
+            send=False,            # default
             event_callback=print,  # maybe for debug
             hint_callback=print,   # maybe for debug
             ignore_errors=(ZeroDivisionError, KeyboardInterrupt)
@@ -66,7 +66,7 @@ I start with implementing only what I need, with time I will add more stuff.
 Dear Sentry, please don't sue me. This project is for people who cannot use your
 wonderful, best-in-class product. I'm your biggest fan and evangelise your paid
 version where I can. This all is in good faith, but it does abuse your SDK, you
-didn't build it so that we can store your events elsewhere. Thanks. 
+didn't build it so that we can store your events elsewhere. Thanks.
 
 # todo
 
@@ -92,14 +92,12 @@ didn't build it so that we can store your events elsewhere. Thanks.
 
     pip install -e .
     pip install -U setuptools wheel build twine
-    rm dist/*
-    # change "version = ????????" in setup.cfg 
-    python -m build --wheel
-    twine check dist/*
-    twine upload dist/*
+    # change "version = ????????" in setup.cfg
+    rm dist/* && python -m build --wheel &&  twine check dist/* && twine upload dist/*
 
 # changelog
 
+- 2023-08-24 handle logger.error
 - 2023-08-17 display tags set via `sentry_sdk.set_tag("sth", "sth")`
 - 2023-08-11 ignore_errors, expand README
 - 2023-08-10 rename to minisentry

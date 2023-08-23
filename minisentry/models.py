@@ -17,11 +17,25 @@ class SentryIssue(models.Model):
 
     @staticmethod
     def _model_fields_from_event(event: dict):
-        return {
-            'title': event['exception']['values'][0]['type'],
-            'where': event.get('transaction', event['exception']['values'][0]['module']),
-            'exception_value': event['exception']['values'][0]['value']
-        }
+        if 'exception' in event:
+            return {
+                'title': event['exception']['values'][0]['type'],
+                'where': event.get('transaction', event['exception']['values'][0]['module']),
+                'exception_value': event['exception']['values'][0]['value']
+            }
+        elif 'logentry' in event:
+            return {
+                'title': event['logentry']['message'],
+                'where': event['logger'],
+                'exception_value': '',
+            }
+        else:
+            # I need to observe real life examples of this
+            return {
+                'title': 'minisentry error',
+                'where': 'minisentry error',
+                'exception_value': 'minisentry error',
+            }
 
 class SentryEvent(models.Model):
     id = models.CharField(max_length=32, primary_key=True, help_text='example: 7bfcbdef7a754da985f8e69d64d1299c')
@@ -41,13 +55,14 @@ class SentryEvent(models.Model):
     @staticmethod
     def _add_context_line_numbers(event):
         # idempotent
-        for exception in event['exception']['values']:
-            for frame in exception['stacktrace']['frames']:
-                lines_no_pre_context = len(frame['pre_context'])
-                for i, line in enumerate(frame['pre_context']):
-                    frame['pre_context'][i] = [int(frame['lineno']) - lines_no_pre_context + i, line]
-                for i, line in enumerate(frame['post_context']):
-                    frame['post_context'][i] = [int(frame['lineno']) + i + 1, line]
+        if 'exception' in event:
+            for exception in event['exception']['values']:
+                for frame in exception['stacktrace']['frames']:
+                    lines_no_pre_context = len(frame['pre_context'])
+                    for i, line in enumerate(frame['pre_context']):
+                        frame['pre_context'][i] = [int(frame['lineno']) - lines_no_pre_context + i, line]
+                    for i, line in enumerate(frame['post_context']):
+                        frame['post_context'][i] = [int(frame['lineno']) + i + 1, line]
 
     @cached_property
     def tags(self):
@@ -55,7 +70,7 @@ class SentryEvent(models.Model):
             'environment': self.event['environment'],
             'release': self.event['release'],
             'level': self.event['level'],
-            'mechanism': self.event['exception']['values'][0]['mechanism']['type'],
+            'mechanism': self.event['exception']['values'][0]['mechanism']['type'] if 'exception' in self.event else '',
             'server_name': self.event['server_name'],
             # conditional, url is not always present, this will break
             'transaction': self.event.get('transaction', ''),
